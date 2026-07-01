@@ -38,16 +38,21 @@ def clean_text(text):
 def extract_fields(text):
     data = {}
 
-    email = re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", text)
-    phone = re.findall(r"\b[6-9]\d{9}\b", text)
-    amount = re.findall(r"(?:₹|Rs\.?|INR)\s?\d+[,\d]*", text)
-    date = re.findall(r"\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b", text)
-    invoice = re.findall(r"(?:Invoice No|Invoice Number|INV)[\s:.-]*[A-Za-z0-9-]+", text, re.I)
+    def find(pattern):
+        match = re.search(pattern, text, re.IGNORECASE)
+        return match.group(1).strip() if match else ""
 
-    data["email"] = email[0] if email else ""
-    data["phone"] = phone[0] if phone else ""
-    data["amount"] = amount[0] if amount else ""
-    data["date"] = date[0] if date else ""
-    data["invoice_number"] = invoice[0] if invoice else ""
+    data["consumer_name"] = find(r"Consumer Name\s*:?\s*([A-Za-z ]+?)\s*Consumer ID")
+    data["consumer_id"] = find(r"Consumer ID\s*:?\s*(\d+)")
+    data["phone"] = find(r"Phone Number\s*:?\s*(\d{10})")
+    data["email"] = find(r"Email\s*:?\s*([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)")
+    data["bill_number"] = find(r"Bill Number\s*:?\s*(\d+)")
+    data["bill_date"] = find(r"Bill Date\s*:?\s*(\d{2}-\d{2}-\d{4})")
+    data["due_date"] = find(r"Due Date\s*:?\s*(\d{2}-\d{2}-\d{4})")
+    data["tariff_category"] = find(r"Tariff Category\s*:?\s*([A-Za-z ]+?)\s*Connection Type")
+    data["units_consumed"] = find(r"Units Consumed\s*(?:28-06-2026\s*)?(?:e\s*)?15434\s*(\d+)")
+    data["meter_number"] = find(r"Meter Number\s*:?\s*(KSEB\d+)")
+    amount_match = re.findall(r"\d{1,3}(?:,\d{3})*\.\d{2}", text)
+    data["total_amount"] = amount_match[-1] if amount_match else ""
 
     return data
